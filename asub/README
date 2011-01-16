@@ -1,0 +1,3 @@
+Submitting array jobs to LSF and SGE. Example:
+
+  ls *.fa | sed s,.fa,, | xargs -i echo wc -l {}.fa \> {}.wc | asub
