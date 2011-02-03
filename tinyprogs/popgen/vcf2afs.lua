@@ -1,4 +1,10 @@
--- From a VCF file, get the site allele frequency or the allele frequency spectrum in each population
+#!/usr/bin/env luajit
+
+--[[
+  Author: lh3
+  Description: From a VCF file, get the site allele frequency or the allele
+               frequency spectrum in each population.
+]]--
 
 --------- routines from klua.lua ------------
 function os.getopt(args, ostr)
