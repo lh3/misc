@@ -11,8 +11,12 @@
 |       `-- matmul.pl          #     perl implementation
 |-- popgen                     # population genetics
 |   |-- genetic_dist.js        #   compute the genetic distance from deCODE genetic maps
-|   `-- vcf2afs.lua            #   get per-population AFS or site allele frequency from VCF
+|   |-- vcf2afs.lua            #   get per-population AFS or site allele frequency from VCF
+|   `-- vcf2afs.pl             #   the perl version
 |-- seq                        # sequence analysis
+|   |-- bedtk                  #   BED processing utilities
+|   |   |-- bedtk.lua          #     the lua version
+|   |   `-- bedutils.pl        #     the old perl version
 |   `-- seqtk                  #   toolkit for manipulation FASTA/Q files
 |       |-- khash.h
 |       |-- kseq.h
