@@ -30,28 +30,6 @@ function io.xopen(fn, mode)
 end
 --
 
-function bed_read2(fp1, fp2)
-	if fp2 == nil then
-		return function()
-			local t = fp1:read():split("\t", 4);
-			t[2], t[3] = tonumber(t[2]), tonumber(t[3]);
-			return t;
-		end
-	else
-		local fp, t, i = {fp1, fp2}, {}, 2;
-		t[1] = fp[1]:read():split("\t", 4);
-		t[1][2], t[1][3] = tonumber(t[1][2]), tonumber(t[1][3]);
-		return function()
-			local ti = t[i];
-			ti = fp[i]:read():split("\t", 4);
-			ti[2], ti[3] = tonumber(ti[2]), tonumber(ti[3]);
-			if t[1][1] == t[2][1] then i = (t[1][2] < t[2][2] and 1) or 2;
-			else i = (t[1][1] < t[2][1] and 1) or 2 end
-			return t[i];
-		end
-	end
-end
-
 function bed_union(fp)
 	local c, b, e, n;
 	for l in fp:lines() do
@@ -99,13 +77,9 @@ if #arg == 0 then
 	os.exit(1);
 end
 
-local fp = io.xopen(arg[2]);
---[[
-for t in bed_read2(fp) do
-	print(t[1], t[2], t[3]);
-end
-os.exit(1);
-]]--
-if arg[1] == 'union' then bed_union(fp)
-elseif arg[1] == 'cov2' then bed_cov2(fp)
+local cmd = arg[1];
+table.remove(arg, 1);
+local fp = io.xopen(arg[1]);
+if cmd == 'union' then bed_union(fp)
+elseif cmd == 'cov2' then bed_cov2(fp)
 else print('Unrecognized command.') end
