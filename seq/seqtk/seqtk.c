@@ -139,6 +139,44 @@ int stk_comp(int argc, char *argv[])
 	return 0;
 }
 
+int stk_randbase(int argc, char *argv[])
+{
+	gzFile fp;
+	kseq_t *seq;
+	int l;
+	if (argc == 1) {
+		fprintf(stderr, "Usage: seqtk randbase <in.fa>\n");
+		return 1;
+	}
+	fp = (strcmp(argv[1], "-") == 0)? gzdopen(fileno(stdin), "r") : gzopen(argv[1], "r");
+	seq = kseq_init(fp);
+	while ((l = kseq_read(seq)) >= 0) {
+		int i;
+		printf(">%s", seq->name.s);
+		for (i = 0; i < l; ++i) {
+			int c, b, a, j, k, m;
+			b = seq->seq.s[i];
+			c = seq_nt16_table[b];
+			a = bitcnt_table[c];
+			if (a == 2) {
+				m = (drand48() < 0.5);
+				for (j = k = 0; j < 4; ++j) {
+					if ((1<<j & c) == 0) continue;
+					if (k == m) break;
+					++k;
+				}
+				seq->seq.s[i] = islower(b)? "acgt"[j] : "ACGT"[j];
+			}
+			if (i%60 == 0) putchar('\n');
+			putchar(seq->seq.s[i]);
+		}
+		putchar('\n');
+	}
+	kseq_destroy(seq);
+	gzclose(fp);
+	return 0;
+}
+
 int stk_hety(int argc, char *argv[])
 {
 	gzFile fp;
@@ -482,6 +520,7 @@ int main(int argc, char *argv[])
 	else if (strcmp(argv[1], "maskseq") == 0) stk_maskseq(argc-1, argv+1);
 	else if (strcmp(argv[1], "mutfa") == 0) stk_mutfa(argc-1, argv+1);
 	else if (strcmp(argv[1], "mergefa") == 0) stk_mergefa(argc-1, argv+1);
+	else if (strcmp(argv[1], "randbase") == 0) stk_randbase(argc-1, argv+1);
 	else {
 		fprintf(stderr, "[main] unrecognized commad '%s'. Abort!\n", argv[1]);
 		return 1;
