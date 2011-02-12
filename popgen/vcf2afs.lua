@@ -75,6 +75,15 @@ function string:split(sep, n)
 	return a;
 end
 
+function io.xopen(fn, mode)
+	mode = mode or 'r';
+	if fn == nil then return io.stdin;
+	elseif fn == '-' then return (mode == 'r' and io.stdin) or io.stdout;
+	elseif fn:sub(-3) == '.gz' then return io.popen('gzip -dc ' .. fn, mode);
+	elseif fn:sub(-4) == '.bz2' then return io.popen('bzip2 -dc ' .. fn, mode);
+	else return io.open(fn, mode) end
+end
+
 ----------- klua routines end here ------------
 
 -- parse the command line
@@ -89,7 +98,7 @@ end
 
 -- read the sample-population pairs
 local pop, sample = {}, {}
-local fp = io.open(arg[1]);
+local fp = io.xopen(arg[1]);
 for l in fp:lines() do
 	local s, p = l:match("^(%S+)%s+(%S+)"); -- sample, population pair
 	sample[s] = p; -- FIXME: check duplications
@@ -99,7 +108,7 @@ end
 fp:close();
 
 -- parse VCF
-fp = (#arg >= 2 and io.open(arg[2])) or io.stdin;
+fp = (#arg >= 2 and io.xopen(arg[2])) or io.stdin;
 local col, cnt = {}, {};
 for k in pairs(pop) do
 	col[k], cnt[k] = {}, {[0]=0};
