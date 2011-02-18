@@ -280,7 +280,9 @@ int stk_maskseq(int argc, char *argv[])
 		}
 	}
 	if (argc - optind < 2) {
-		fprintf(stderr, "Usage: seqtk maskseq [-cl] <in.fa> <in.bed>\n");
+		fprintf(stderr, "Usage:   seqtk maskseq [-cl] <in.fa> <in.bed>\n\n");
+		fprintf(stderr, "Options: -c     mask the complement regions\n");
+		fprintf(stderr, "         -l     soft mask (to lower cases)\n");
 		return 1;
 	}
 	h = stk_reg_read(argv[optind+1]);
@@ -383,13 +385,19 @@ int stk_mergefa(int argc, char *argv[])
 {
 	gzFile fp[2];
 	kseq_t *seq[2];
-	int i, l;
-	if (argc < 3) {
-		fprintf(stderr, "Usage: seqtk mergefa <in1.fa> <in2.fa>\n");
+	int i, l, c, is_intersect = 0;
+	while ((c = getopt(argc, argv, "i")) >= 0) {
+		switch (c) {
+			case 'i': is_intersect = 1; break;
+		}
+	}
+	if (optind + 2 > argc) {
+		fprintf(stderr, "Usage: seqtk mergefa [-i] <in1.fa> <in2.fa>\n\n");
+		fprintf(stderr, "Options: -i    take intersection\n");
 		return 1;
 	}
 	for (i = 0; i < 2; ++i) {
-		fp[i] = gzopen(argv[i+1], "r");
+		fp[i] = strcmp(argv[optind+i], "-")? gzopen(argv[optind+i], "r") : gzdopen(fileno(stdin), "r");
 		seq[i] = kseq_init(fp[i]);
 	}
 	while (kseq_read(seq[0]) >= 0) {
@@ -403,8 +411,13 @@ int stk_mergefa(int argc, char *argv[])
 		printf(">%s", seq[0]->name.s);
 		for (l = 0; l < min_l; ++l) {
 			c[0] = seq[0]->seq.s[l]; c[1] = seq[1]->seq.s[l];
-			is_upper = (isupper(c[0]) && isupper(c[1]))? 1 : 0;
-			c[0] = seq_nt16_table[c[0]] | seq_nt16_table[c[1]];
+			if (is_intersect) is_upper = (isupper(c[0]) || isupper(c[1]))? 1 : 0;
+			else is_upper = (isupper(c[0]) && isupper(c[1]))? 1 : 0;
+			c[0] = seq_nt16_table[c[0]]; c[1] = seq_nt16_table[c[1]];
+			if (is_intersect) {
+				c[0] = c[0] & c[1];
+				if (c[0] == 0) is_upper = 0;
+			} else c[0] = c[0] | c[1];
 			c[0] = seq_nt16_rev_table[c[0]];
 			if (!is_upper) c[0] = tolower(c[0]);
 			if (l%60 == 0) putchar('\n');
