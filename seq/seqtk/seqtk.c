@@ -290,31 +290,36 @@ int stk_maskseq(int argc, char *argv[])
 	fp = strcmp(argv[optind], "-")? gzopen(argv[optind], "r") : gzdopen(fileno(stdin), "r");
 	seq = kseq_init(fp);
 	while ((l = kseq_read(seq)) >= 0) {
-		reglist_t *p;
 		k = kh_get(reg, h, seq->name.s);
-		if (k == kh_end(h)) continue;
-		p = &kh_val(h, k);
-		if (!is_complement) {
-			for (i = 0; i < p->n; ++i) {
-				int beg = p->a[i]>>32, end = p->a[i];
-				if (beg >= seq->seq.l) {
-					fprintf(stderr, "[maskseq] start position >= the sequence length.\n");
-					continue;
-				}
-				if (end >= seq->seq.l) end = seq->seq.l;
-				if (is_lower) for (j = beg; j < end; ++j) seq->seq.s[j] = tolower(seq->seq.s[j]);
-				else for (j = beg; j < end; ++j) seq->seq.s[j] = 'N';
+		if (k == kh_end(h)) { // not found in the hash table
+			if (is_complement) {
+				for (j = 0; j < l; ++j)
+					seq->seq.s[j] = is_lower? tolower(seq->seq.s[j]) : 'N';
 			}
 		} else {
-			int8_t *mask = calloc(seq->seq.l, 1);
-			for (i = 0; i < p->n; ++i) {
-				int beg = p->a[i]>>32, end = p->a[i];
-				if (end >= seq->seq.l) end = seq->seq.l;
-				for (j = beg; j < end; ++j) mask[j] = 1;
+			reglist_t *p = &kh_val(h, k);
+			if (!is_complement) {
+				for (i = 0; i < p->n; ++i) {
+					int beg = p->a[i]>>32, end = p->a[i];
+					if (beg >= seq->seq.l) {
+						fprintf(stderr, "[maskseq] start position >= the sequence length.\n");
+						continue;
+					}
+					if (end >= seq->seq.l) end = seq->seq.l;
+					if (is_lower) for (j = beg; j < end; ++j) seq->seq.s[j] = tolower(seq->seq.s[j]);
+					else for (j = beg; j < end; ++j) seq->seq.s[j] = 'N';
+				}
+			} else {
+				int8_t *mask = calloc(seq->seq.l, 1);
+				for (i = 0; i < p->n; ++i) {
+					int beg = p->a[i]>>32, end = p->a[i];
+					if (end >= seq->seq.l) end = seq->seq.l;
+					for (j = beg; j < end; ++j) mask[j] = 1;
+				}
+				for (j = 0; j < l; ++j)
+					if (mask[j] == 0) seq->seq.s[j] = is_lower? tolower(seq->seq.s[j]) : 'N';
+				free(mask);
 			}
-			for (j = 0; j < l; ++j)
-				if (mask[j] == 0) seq->seq.s[j] = is_lower? tolower(seq->seq.s[j]) : 'N';
-			free(mask);
 		}
 		printf(">%s", seq->name.s);
 		for (j = 0; j < seq->seq.l; ++j) {
