@@ -560,6 +560,7 @@ static int find_next_cut(const kseq_t *ks, int k, int *begin, int *end)
 static void print_seq(FILE *fpout, const kseq_t *ks, int begin, int end)
 {
 	int i;
+	if (begin >= end) return; // FIXME: why may this happen? Understand it!
 	fprintf(fpout, ">%s:%d-%d", ks->name.s, begin+1, end);
 	for (i = begin; i < end && i < ks->seq.l; ++i) {
 		if ((i - begin)%60 == 0) fputc('\n', fpout);
