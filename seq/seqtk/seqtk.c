@@ -507,6 +507,82 @@ int stk_mutfa(int argc, char *argv[])
 	return 0;
 }
 
+/* cutN */
+static int cutN_min_N_tract = 1000;
+static int cutN_nonN_penalty = 10;
+
+static int find_next_cut(const kseq_t *ks, int k, int *begin, int *end)
+{
+	int i, b, e;
+	while (k < ks->seq.l) {
+		if (seq_nt16_table[(int)ks->seq.s[k]] == 15) {
+			int score, max;
+			score = 0; e = max = -1;
+			for (i = k; i < ks->seq.l && score >= 0; ++i) { /* forward */
+				if (seq_nt16_table[(int)ks->seq.s[i]] == 15) ++score;
+				else score -= cutN_nonN_penalty;
+				if (score > max) max = score, e = i;
+			}
+			score = 0; b = max = -1;
+			for (i = e; i >= 0 && score >= 0; --i) { /* backward */
+				if (seq_nt16_table[(int)ks->seq.s[i]] == 15) ++score;
+				else score -= cutN_nonN_penalty;
+				if (score > max) max = score, b = i;
+			}
+			if (e + 1 - b >= cutN_min_N_tract) {
+				*begin = b;
+				*end = e + 1;
+				return *end;
+			}
+			k = e + 1;
+		} else ++k;
+	}
+	return -1;
+}
+static void print_seq(FILE *fpout, const kseq_t *ks, int begin, int end)
+{
+	int i;
+	fprintf(fpout, ">%s:%d-%d", ks->name.s, begin+1, end);
+	for (i = begin; i < end && i < ks->seq.l; ++i) {
+		if ((i - begin)%60 == 0) fputc('\n', fpout);
+		fputc(ks->seq.s[i], fpout);
+	}
+	fputc('\n', fpout);
+}
+int stk_cutN(int argc, char *argv[])
+{
+	int c, l;
+	gzFile fp;
+	kseq_t *ks;
+	while ((c = getopt(argc, argv, "n:p:")) >= 0) {
+		switch (c) {
+		case 'n': cutN_min_N_tract = atoi(optarg); break;
+		case 'p': cutN_nonN_penalty = atoi(optarg); break;
+		default: return 1;
+		}
+	}
+	if (argc == optind) {
+		fprintf(stderr, "\n");
+		fprintf(stderr, "Usage:   seqtk cutN [options] <in.fa>\n\n");
+		fprintf(stderr, "Options: -n INT    min size of N tract [%d]\n", cutN_min_N_tract);
+		fprintf(stderr, "         -p INT    penalty for a non-N [%d]\n\n", cutN_nonN_penalty);
+		return 1;
+	}
+	fp = (strcmp(argv[optind], "-") == 0)? gzdopen(fileno(stdin), "r") : gzopen(argv[optind], "r");
+	ks = kseq_init(fp);
+	while ((l = kseq_read(ks)) >= 0) {
+		int k = 0, begin = 0, end = 0;
+		while (find_next_cut(ks, k, &begin, &end) >= 0) {
+			if (begin != 0) print_seq(stdout, ks, k, begin);
+			k = end;
+		}
+		print_seq(stdout, ks, k, l);
+	}
+	kseq_destroy(ks);
+	gzclose(fp);
+	return 0;
+}
+
 /* main function */
 static int usage()
 {
@@ -519,6 +595,8 @@ static int usage()
 	fprintf(stderr, "         maskseq   mask sequences\n");
 	fprintf(stderr, "         mutfa     point mutate FASTA at specified positions\n");
 	fprintf(stderr, "         mergefa   merge two FASTA/Q files\n");
+	fprintf(stderr, "         randbase  choose a random base from hets\n");
+	fprintf(stderr, "         cutN      cut sequence at long N\n");
 	fprintf(stderr, "\n");
 	return 1;
 }
@@ -534,6 +612,7 @@ int main(int argc, char *argv[])
 	else if (strcmp(argv[1], "mutfa") == 0) stk_mutfa(argc-1, argv+1);
 	else if (strcmp(argv[1], "mergefa") == 0) stk_mergefa(argc-1, argv+1);
 	else if (strcmp(argv[1], "randbase") == 0) stk_randbase(argc-1, argv+1);
+	else if (strcmp(argv[1], "cutN") == 0) stk_cutN(argc-1, argv+1);
 	else {
 		fprintf(stderr, "[main] unrecognized commad '%s'. Abort!\n", argv[1]);
 		return 1;
