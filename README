@@ -17,9 +17,17 @@
 |   |-- bedtk                  #   BED processing utilities
 |   |   |-- bedtk.lua          #     the lua version
 |   |   `-- bedutils.pl        #     the old perl version
+|   |-- seqbility              #   unitilities to compute mappability http://lh3lh3.users.sourceforge.net/snpable.shtml
+|   |   |-- apply_mask_l.c     #     apply a mask to a list of sites
+|   |   |-- apply_mask_s.c     #     apply a mask to a sequence
+|   |   |-- gen_mask.c         #     generate a mask from a raw mask
+|   |   |-- gen_raw_mask.pl    #     generate a raw mask from BWA SAM output
+|   |   |-- splitfa.c          #     split a reference sequence to overlapping short mers
+|   |   |-- uniq-dist-acc.pl   #     get the accumulative distribution from uniq-dist output
+|   |   |-- uniq-dist-cmp.pl   #     compare to uniq-dist output
+|   |   |-- uniq-dist.c        #     compute the distance between adjacent loci in unique regions
+|   |   `-- [...]
 |   `-- seqtk                  #   toolkit for manipulation FASTA/Q files
-|       |-- khash.h
-|       |-- kseq.h
-|       `-- seqtk.c
+|       `-- [...]
 `-- sys                        # system related programs
     `-- asub                   #   array job submiter
