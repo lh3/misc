@@ -10,7 +10,7 @@
 |   |   |-- matmul.js          #     javascript implementation
 |   |   |-- matmul.lua         #     lua implementation
 |   |   `-- matmul.pl          #     perl implementation
-|   `-- unequal-jk.c           #   block Jackknife
+|   `-- unequal-jk.c           #   block Jackknife; requiring klib/ksort.h
 |-- popgen                     # population genetics
 |   |-- genetic_dist.js        #   compute the genetic distance from deCODE genetic maps
 |   |-- vcf2afs.lua            #   get per-population AFS or site allele frequency from VCF
