@@ -3,13 +3,13 @@
 |-- biodb                      # interface to biological databases
 |   `-- batchUCSC.pl           #   batch UCSC data retrieval; http://lh3lh3.users.sourceforge.net/ucsc-mysql.shtml
 |-- math                       # mathematics
-|   |-- lsoda.c                #   LSODA ODE solver
 |   |-- matmul_SSE             #   matrix multiplication in a few languages; plus SSE example
 |   |   |-- matmul-double.c    #     double numbers
 |   |   |-- matmul.c           #     float numbers; plus SSE implementation
 |   |   |-- matmul.js          #     javascript implementation
 |   |   |-- matmul.lua         #     lua implementation
 |   |   `-- matmul.pl          #     perl implementation
+|   |-- lsoda.c                #   LSODA ODE solver
 |   `-- unequal-jk.c           #   block Jackknife; requiring klib/ksort.h
 |-- popgen                     # population genetics
 |   |-- genetic_dist.js        #   compute the genetic distance from deCODE genetic maps
@@ -29,7 +29,8 @@
 |   |   |-- uniq-dist-cmp.pl   #     compare to uniq-dist output
 |   |   |-- uniq-dist.c        #     compute the distance between adjacent loci in unique regions
 |   |   `-- [...]
-|   `-- seqtk                  #   toolkit for manipulation FASTA/Q files
-|       `-- [...]
+|   |-- seqtk                  #   toolkit for manipulation FASTA/Q files
+|   |   `-- [...]
+|   `-- bc2rg.lua              #   generate the RG SAM tag from the BC tag
 `-- sys                        # system related programs
     `-- asub                   #   array job submiter
