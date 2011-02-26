@@ -83,7 +83,7 @@ end
 ]]--
 
 function plist_read_list(fn)
-	local fp = io.xopen(fn2);
+	local fp = io.xopen(fn);
 	local hash = {};
 	for l in fp:lines() do
 		local chr, pos = l:match("^(%S+)%s+(%d+)");

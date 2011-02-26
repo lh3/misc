@@ -29,7 +29,6 @@
 |   |-- seqtk                  #   toolkit for manipulation FASTA/Q files
 |   |   `-- [...]
 |   |-- bc2rg.lua              #   generate the RG SAM tag from the BC tag
-|   |-- bedtk.lua              #   utilities to process BED files and position files
-|   `-- bedutils.pl            #   the old perl version of bedtk.lua
+|   `-- bedutils.lua           #   utilities to process BED files and position list files
 `-- sys                        # system related programs
     `-- asub                   #   array job submiter
