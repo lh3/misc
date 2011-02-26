@@ -525,6 +525,29 @@ int stk_mutfa(int argc, char *argv[])
 	return 0;
 }
 
+int stk_listhet(int argc, char *argv[])
+{
+	gzFile fp;
+	kseq_t *seq;
+	int i, l;
+	if (argc == 1) {
+		fprintf(stderr, "Usage: seqtk listhet <in.fa>\n");
+		return 1;
+	}
+	fp = (strcmp(argv[1], "-") == 0)? gzdopen(fileno(stdin), "r") : gzopen(argv[1], "r");
+	seq = kseq_init(fp);
+	while ((l = kseq_read(seq)) >= 0) {
+		for (i = 0; i < l; ++i) {
+			int b = seq->seq.s[i];
+			if (bitcnt_table[seq_nt16_table[b]] == 2)
+				printf("%s\t%d\t%c\n", seq->name.s, i+1, b);
+		}
+	}
+	kseq_destroy(seq);
+	gzclose(fp);
+	return 0;
+}
+
 /* cutN */
 static int cutN_min_N_tract = 1000;
 static int cutN_nonN_penalty = 10;
@@ -616,6 +639,7 @@ static int usage()
 	fprintf(stderr, "         mergefa   merge two FASTA/Q files\n");
 	fprintf(stderr, "         randbase  choose a random base from hets\n");
 	fprintf(stderr, "         cutN      cut sequence at long N\n");
+	fprintf(stderr, "         listhet   extract the position of each het\n");
 	fprintf(stderr, "\n");
 	return 1;
 }
@@ -632,6 +656,7 @@ int main(int argc, char *argv[])
 	else if (strcmp(argv[1], "mergefa") == 0) stk_mergefa(argc-1, argv+1);
 	else if (strcmp(argv[1], "randbase") == 0) stk_randbase(argc-1, argv+1);
 	else if (strcmp(argv[1], "cutN") == 0) stk_cutN(argc-1, argv+1);
+	else if (strcmp(argv[1], "listhet") == 0) stk_listhet(argc-1, argv+1);
 	else {
 		fprintf(stderr, "[main] unrecognized commad '%s'. Abort!\n", argv[1]);
 		return 1;
