@@ -403,15 +403,19 @@ int stk_mergefa(int argc, char *argv[])
 {
 	gzFile fp[2];
 	kseq_t *seq[2];
-	int i, l, c, is_intersect = 0;
-	while ((c = getopt(argc, argv, "i")) >= 0) {
+	int i, l, c, is_intersect = 0, is_haploid = 0, qual = 0;
+	while ((c = getopt(argc, argv, "hiq:")) >= 0) {
 		switch (c) {
 			case 'i': is_intersect = 1; break;
+			case 'h': is_haploid = 1; break;
+			case 'q': qual = atoi(optarg); break;
 		}
 	}
 	if (optind + 2 > argc) {
-		fprintf(stderr, "Usage: seqtk mergefa [-i] <in1.fa> <in2.fa>\n\n");
-		fprintf(stderr, "Options: -i    take intersection\n");
+		fprintf(stderr, "\nUsage: seqtk mergefa [options] <in1.fa> <in2.fa>\n\n");
+		fprintf(stderr, "Options: -q INT   quality threshold [0]\n");
+		fprintf(stderr, "         -i       take intersection\n");
+		fprintf(stderr, "         -h       suppress hets in the input\n\n");
 		return 1;
 	}
 	for (i = 0; i < 2; ++i) {
@@ -429,9 +433,12 @@ int stk_mergefa(int argc, char *argv[])
 		printf(">%s", seq[0]->name.s);
 		for (l = 0; l < min_l; ++l) {
 			c[0] = seq[0]->seq.s[l]; c[1] = seq[1]->seq.s[l];
+			if (seq[0]->qual.l && seq[0]->qual.s[l] - 33 < qual) c[0] = tolower(c[0]);
+			if (seq[1]->qual.l && seq[1]->qual.s[l] - 33 < qual) c[1] = tolower(c[1]);
 			if (is_intersect) is_upper = (isupper(c[0]) || isupper(c[1]))? 1 : 0;
 			else is_upper = (isupper(c[0]) && isupper(c[1]))? 1 : 0;
 			c[0] = seq_nt16_table[c[0]]; c[1] = seq_nt16_table[c[1]];
+			if (is_haploid && (bitcnt_table[c[0]] > 1 || bitcnt_table[c[1]] > 1)) is_upper = 0;
 			if (is_intersect) {
 				c[0] = c[0] & c[1];
 				if (c[0] == 0) is_upper = 0;
