@@ -34,9 +34,9 @@ end
 	BED utilities
 ]]--
 
-function bed_merge(fn)
+function bed_merge(arg)
 	local c, b, e, n;
-	local fp = io.xopen(fn);
+	local fp = io.xopen(arg[1]);
 	for l in fp:lines() do
 		local t = l:split('\t', 4);
 		t[2], t[3] = tonumber(t[2]), tonumber(t[3]);
@@ -52,9 +52,9 @@ function bed_merge(fn)
 	fp:close();
 end
 
-function bed_cov2(fn)
+function bed_cov2(arg)
 	local c, e, ob, oe; -- e is the rightmost pos;
-	local fp = io.xopen(fn);
+	local fp = io.xopen(arg[1]);
 	ob, oe = -1, -1; -- ob and oe are the coordinates of the region to output
 	for l in fp:lines() do
 		local t = l:split('\t', 4);
@@ -93,8 +93,8 @@ function plist_read_list(fn)
 	return hash;
 end
 
-function plist_uniq(fn1, fn2)
-	local fp, hash = io.xopen(fn1), plist_read_list(fn2);
+function plist_uniq(arg)
+	local fp, hash = io.xopen(arg[1]), plist_read_list(arg[2]);
 	for l in fp:lines() do
 		local chr, pos = l:match("^(%S+)%s+(%d+)");
 		if hash[chr .. pos] == nil then print(l) end
@@ -102,8 +102,8 @@ function plist_uniq(fn1, fn2)
 	fp:close();
 end
 
-function plist_joint(fn1, fn2)
-	local fp, hash = io.xopen(fn1), plist_read_list(fn2);
+function plist_joint(arg)
+	local fp, hash = io.xopen(arg[1]), plist_read_list(arg[2]);
 	for l in fp:lines() do
 		local chr, pos = l:match("^(%S+)%s+(%d+)");
 		if hash[chr .. pos] then print(l) end
@@ -111,24 +111,53 @@ function plist_joint(fn1, fn2)
 	fp:close();
 end
 
+--[[
+]]--
+
+function misc_N50(arg)
+	local col, list = 1, {};
+	local fp = io.xopen(arg[1]);
+	local x = 0;
+	if arg[2] ~= nil then col = tonumber(arg[2]) end
+	for l in fp:lines() do
+		local t = l:split("%s+", col+1);
+		local y = tonumber(t[col]);
+		x = x + y;
+		table.insert(list, y);
+	end
+	local sum = x;
+	table.sort(list);
+	x = 0;
+	for i = #list,1,-1 do
+		x = x + list[i];
+		if x >= sum/2 then
+			print(sum, list[i]);
+			return
+		end
+	end
+end
+
 -- main function
 
 if #arg == 0 then
 	print('');
-	print('Usage:   bedutils.lua <command> <arguments>\n');
-	print('Command: merge     merge overlapping regions in a sorted BED');
-	print('         cov2      extract regions covered by >=2 records in a sorted BED');
+	print('Usage:   bioutils.lua <command> <arguments>\n');
+	print('Command: bedmerge  merge overlapping regions in a sorted BED');
+	print('         bedcov2   extract regions covered by >=2 records in a sorted BED');
 	print('');
 	print('         luniq     output records unique in the 1st PLIST file');
 	print('         ljoint    output records in the 1st PLIST present in the 2nd');
+	print('');
+	print('         N50       calculate N50');
 	print('');
 	os.exit(1);
 end
 
 local cmd = arg[1];
 table.remove(arg, 1);
-if cmd == 'merge' then bed_merge(arg[1])
-elseif cmd == 'cov2' then bed_cov2(arg[1])
-elseif cmd == 'luniq' then plist_uniq(arg[1], arg[2])
-elseif cmd == 'ljoint' then plist_joint(arg[1], arg[2])
+if cmd == 'bedmerge' then bed_merge(arg)
+elseif cmd == 'bedcov2' then bed_cov2(arg)
+elseif cmd == 'luniq' then plist_uniq(arg)
+elseif cmd == 'ljoint' then plist_joint(arg)
+elseif cmd == 'N50' then misc_N50(arg);
 else print('Unrecognized command.') end
