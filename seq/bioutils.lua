@@ -82,7 +82,7 @@ end
 	PLIST utilities
 ]]--
 
-function plist_read_list(fn)
+function pos_read_list(fn)
 	local fp = io.xopen(fn);
 	local hash = {};
 	for l in fp:lines() do
@@ -93,8 +93,8 @@ function plist_read_list(fn)
 	return hash;
 end
 
-function plist_uniq(arg)
-	local fp, hash = io.xopen(arg[1]), plist_read_list(arg[2]);
+function pos_uniq(arg)
+	local fp, hash = io.xopen(arg[1]), pos_read_list(arg[2]);
 	for l in fp:lines() do
 		local chr, pos = l:match("^(%S+)%s+(%d+)");
 		if hash[chr .. pos] == nil then print(l) end
@@ -102,8 +102,8 @@ function plist_uniq(arg)
 	fp:close();
 end
 
-function plist_joint(arg)
-	local fp, hash = io.xopen(arg[1]), plist_read_list(arg[2]);
+function pos_joint(arg)
+	local fp, hash = io.xopen(arg[1]), pos_read_list(arg[2]);
 	for l in fp:lines() do
 		local chr, pos = l:match("^(%S+)%s+(%d+)");
 		if hash[chr .. pos] then print(l) end
@@ -145,8 +145,8 @@ if #arg == 0 then
 	print('Command: bedmerge  merge overlapping regions in a sorted BED');
 	print('         bedcov2   extract regions covered by >=2 records in a sorted BED');
 	print('');
-	print('         luniq     output records unique in the 1st PLIST file');
-	print('         ljoint    output records in the 1st PLIST present in the 2nd');
+	print('         posuniq     output records unique in the 1st PLIST file');
+	print('         posjoint    output records in the 1st PLIST present in the 2nd');
 	print('');
 	print('         N50       calculate N50');
 	print('');
@@ -157,7 +157,7 @@ local cmd = arg[1];
 table.remove(arg, 1);
 if cmd == 'bedmerge' then bed_merge(arg)
 elseif cmd == 'bedcov2' then bed_cov2(arg)
-elseif cmd == 'luniq' then plist_uniq(arg)
-elseif cmd == 'ljoint' then plist_joint(arg)
+elseif cmd == 'posuniq' then pos_uniq(arg)
+elseif cmd == 'posjoint' then pos_joint(arg)
 elseif cmd == 'N50' then misc_N50(arg);
 else print('Unrecognized command.') end
