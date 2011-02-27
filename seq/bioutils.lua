@@ -131,7 +131,7 @@ function misc_N50(arg)
 	for i = #list,1,-1 do
 		x = x + list[i];
 		if x >= sum/2 then
-			print(sum, list[i]);
+			print(#list, sum, list[i]);
 			return
 		end
 	end
