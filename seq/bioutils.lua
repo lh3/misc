@@ -145,8 +145,8 @@ if #arg == 0 then
 	print('Command: bedmerge  merge overlapping regions in a sorted BED');
 	print('         bedcov2   extract regions covered by >=2 records in a sorted BED');
 	print('');
-	print('         posuniq     output records unique in the 1st PLIST file');
-	print('         posjoint    output records in the 1st PLIST present in the 2nd');
+	print('         posuniq   output records unique in the 1st PLIST file');
+	print('         posjoint  output records in the 1st PLIST present in the 2nd');
 	print('');
 	print('         N50       calculate N50');
 	print('');
