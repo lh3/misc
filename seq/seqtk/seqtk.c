@@ -255,6 +255,7 @@ int stk_fq2fa(int argc, char *argv[])
 					seq->seq.s[i] = tolower(seq->seq.s[i]);
 		}
 		printf(">%s", seq->name.s);
+		if (seq->comment.l) printf(" %s", seq->comment.s);
 		for (i = 0; i < l; i += 60) {
 			putchar('\n');
 			for (j = i; j < i + 60 && j < l; ++j) putchar(seq->seq.s[j]);
