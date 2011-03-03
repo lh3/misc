@@ -20,7 +20,7 @@ sub main {
 					'name,strand,chrom,txStart,txEnd,cdsStart,cdsEnd,exonCount,name2']);
 
   my %opts = (d=>'hg18', s=>'genomep:password@genome-mysql.cse.ucsc.edu:3306', p=>'refGeneBrief', S=>'');
-  getopts('d:s:p:Ch', \%opts);
+  getopts('d:s:p:Che', \%opts);
   &help_message if (defined $opts{h});
   &usage(\%opts, \%preset) if (@ARGV == 0 && -t STDIN && !$opts{S});
   $opts{C} = (defined $opts{C})? 1 : 0;
@@ -78,7 +78,13 @@ sub retrieve {
 	@bin = ();
 	if ($opts->{b}) {
 	  @bin = &region2bin($t[1], $t[2]);
-	  $sth_cache[@bin] ||= $dbh->prepare($sql_comm . (' OR bin=?' x (@bin-1)) . ')');
+	  my $sql = $sql_comm . (' OR bin=?' x (@bin-1)) . ')';
+	  $sth_cache[@bin] ||= $dbh->prepare($sql);
+	  my ($k, $sql_out) = (0, $sql);
+	  my @a = (@t[0..2], @bin);
+	  $a[0] = qq/"$a[0]"/;
+	  $sql_out =~ s/\?/$a[$k++]/eg;
+	  warn("(MM) $sql_out\n") if ($opts->{e});
 	} else {
 	  $sth_cache[0] ||= $dbh->prepare($sql_comm);
 	}
@@ -115,6 +121,7 @@ Options: -s STR     server [$opts->{s}]
          -d STR     database [$opts->{d}]
          -p STR     query: ${tmp} [$opts->{p}]
          -C         contained (by default overlap)
+         -e         print the SQL
          -h         longer help
 
 Examples:
