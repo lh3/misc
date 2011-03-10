@@ -86,10 +86,10 @@ function matrix.chi2(a)
 	if #a == 2 and #a[1] == 2 then -- 2x2 table
 		local x, z
 		x = (a[1][1] + a[1][2]) * (a[2][1] + a[2][2]) * (a[1][1] + a[2][1]) * (a[1][2] + a[2][2])
-		if x == 0 then return 0, 1 end
+		if x == 0 then return 0, 1, false end
 		z = a[1][1] * a[2][2] - a[1][2] * a[2][1]
 		z = (a[1][1] + a[1][2] + a[2][1] + a[2][2]) * z * z / x
-		return z, math.igamma(.5, .5 * z, true)
+		return z, math.igamma(.5, .5 * z, true), true
 	else -- generic table
 		local rs, cs, n, m, N, z = {}, {}, #a, #a[1], 0, 0
 		for i = 1, n do rs[i] = 0 end
@@ -104,7 +104,7 @@ function matrix.chi2(a)
 				z = z + (a[i][j] - E) * (a[i][j] - E) / E
 			end
 		end
-		return z, math.igamma(.5 * (n-1) * (m-1), .5 * z, true);
+		return z, math.igamma(.5 * (n-1) * (m-1), .5 * z, true), true;
 	end
 end
 
@@ -151,10 +151,11 @@ for l in fp:lines() do
 					end
 				end
 			end
-			local chi2, p = matrix.chi2(a)
+			local chi2, p, succ = matrix.chi2(a);
 			while #t > 8 do table.remove(t) end
 			--print(a[1][1], a[1][2], a[2][1], a[2][2], chi2, p);
-			print(table.concat(t, "\t") .. ";PCHI2=" .. string.format("%.3g", p))
+			if succ then print(table.concat(t, "\t") .. ";PCHI2=" .. string.format("%.3g", p))
+			else print(table.concat(t, "\t")) end
 		end
 	end
 end

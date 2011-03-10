@@ -1,3 +1,5 @@
+#!/usr/bin/env luajit
+
 local a = {}
 for l in io.lines() do
 	a[#a+1] = tonumber(l);
