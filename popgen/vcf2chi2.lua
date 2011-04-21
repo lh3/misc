@@ -154,7 +154,9 @@ for l in fp:lines() do
 			local chi2, p, succ = matrix.chi2(a);
 			while #t > 8 do table.remove(t) end
 			--print(a[1][1], a[1][2], a[2][1], a[2][2], chi2, p);
-			if succ then print(table.concat(t, "\t") .. ";PCHI2=" .. string.format("%.3g", p))
+			if succ then print(table.concat(t, "\t") .. ";PCHI2=" .. string.format("%.3g", p)
+					.. string.format(';AF1=%.4g;AF2=%.4g,%.4g', (a[1][2]+a[2][2]) / (a[1][1]+a[1][2]+a[2][1]+a[2][2]),
+					a[1][2]/(a[1][1]+a[1][2]), a[2][2]/(a[2][1]+a[2][2])))
 			else print(table.concat(t, "\t")) end
 		end
 	end
