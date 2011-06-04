@@ -12,11 +12,9 @@
 |   |-- lsoda.c                #   LSODA ODE solver
 |   `-- unequal-jk.c           #   block Jackknife; requiring klib/ksort.h
 |-- popgen                     # population genetics
-|   |-- genetic_dist.js        #   compute the genetic distance from deCODE genetic maps
-|   |-- vcf2afs.lua            #   get per-population AFS or site allele frequency from VCF
-|   `-- vcf2afs.pl             #   the perl version
+|   `-- genetic_dist.js        #   compute the genetic distance from deCODE genetic maps
 |-- seq                        # sequence analysis
-|   |-- seqbility              #   unitilities to compute mappability http://lh3lh3.users.sourceforge.net/snpable.shtml
+|   |-- seqbility              #   unitilities to compute mappability http://bit.ly/snpable
 |   |   |-- apply_mask_l.c     #     apply a mask to a list of sites
 |   |   |-- apply_mask_s.c     #     apply a mask to a sequence
 |   |   |-- gen_mask.c         #     generate a mask from a raw mask
@@ -29,7 +27,7 @@
 |   |-- seqtk                  #   toolkit for manipulation FASTA/Q files
 |   |   `-- [...]
 |   |-- bc2rg.lua              #   generate the RG SAM tag from the BC tag
-|   |-- bedutils.lua           #   utilities to process BED files and position list files
+|   |-- bioutils.lua           #   collection of bioinfo related (tiny) utilites
 |   `-- sam2bp.lua             #   collect break points from a SAM file containing split hits
 `-- sys                        # system related programs
     `-- asub                   #   array job submiter
