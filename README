@@ -2,6 +2,7 @@
 |-- README                     # README
 |-- biodb                      # interface to biological databases
 |   `-- batchUCSC.pl           #   batch UCSC data retrieval; http://lh3lh3.users.sourceforge.net/ucsc-mysql.shtml
+|-- klib.lua                   # the klib Lua library (from http://bit.ly/klibgit)
 |-- math                       # mathematics
 |   |-- matmul_SSE             #   matrix multiplication in a few languages; plus SSE example
 |   |   |-- matmul-double.c    #     double numbers
