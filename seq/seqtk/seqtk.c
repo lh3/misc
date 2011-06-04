@@ -404,18 +404,24 @@ int stk_mergefa(int argc, char *argv[])
 {
 	gzFile fp[2];
 	kseq_t *seq[2];
-	int i, l, c, is_intersect = 0, is_haploid = 0, qual = 0;
-	while ((c = getopt(argc, argv, "hiq:")) >= 0) {
+	int i, l, c, is_intersect = 0, is_haploid = 0, qual = 0, is_mask = 0;
+	while ((c = getopt(argc, argv, "himq:")) >= 0) {
 		switch (c) {
 			case 'i': is_intersect = 1; break;
 			case 'h': is_haploid = 1; break;
+			case 'm': is_mask = 1; break;
 			case 'q': qual = atoi(optarg); break;
 		}
+	}
+	if (is_mask && is_intersect) {
+		fprintf(stderr, "[%s] `-i' and `-h' cannot be applied at the same time.\n", __func__);
+		return 1;
 	}
 	if (optind + 2 > argc) {
 		fprintf(stderr, "\nUsage: seqtk mergefa [options] <in1.fa> <in2.fa>\n\n");
 		fprintf(stderr, "Options: -q INT   quality threshold [0]\n");
 		fprintf(stderr, "         -i       take intersection\n");
+		fprintf(stderr, "         -m       convert to lowercase when one of the input base is N.\n");
 		fprintf(stderr, "         -h       suppress hets in the input\n\n");
 		return 1;
 	}
@@ -437,15 +443,56 @@ int stk_mergefa(int argc, char *argv[])
 			if (seq[0]->qual.l && seq[0]->qual.s[l] - 33 < qual) c[0] = tolower(c[0]);
 			if (seq[1]->qual.l && seq[1]->qual.s[l] - 33 < qual) c[1] = tolower(c[1]);
 			if (is_intersect) is_upper = (isupper(c[0]) || isupper(c[1]))? 1 : 0;
+			else if (is_mask) is_upper = (isupper(c[0]) || isupper(c[1]))? 1 : 0;
 			else is_upper = (isupper(c[0]) && isupper(c[1]))? 1 : 0;
 			c[0] = seq_nt16_table[c[0]]; c[1] = seq_nt16_table[c[1]];
+			if (c[0] == 0) c[0] = 15;
+			if (c[1] == 0) c[1] = 15;
 			if (is_haploid && (bitcnt_table[c[0]] > 1 || bitcnt_table[c[1]] > 1)) is_upper = 0;
 			if (is_intersect) {
+				c[0] = c[0] & c[1];
+				if (c[0] == 0) is_upper = 0;
+			} else if (is_mask) {
+				if (c[0] == 15 || c[1] == 15) is_upper = 0;
 				c[0] = c[0] & c[1];
 				if (c[0] == 0) is_upper = 0;
 			} else c[0] = c[0] | c[1];
 			c[0] = seq_nt16_rev_table[c[0]];
 			if (!is_upper) c[0] = tolower(c[0]);
+			if (l%60 == 0) putchar('\n');
+			putchar(c[0]);
+		}
+		putchar('\n');
+	}
+	return 0;
+}
+
+int stk_famask(int argc, char *argv[])
+{
+	gzFile fp[2];
+	kseq_t *seq[2];
+	int i, l, c, is_intersect = 0, is_haploid = 0, qual = 0, is_mask = 0;
+	if (argc < 3) {
+		fprintf(stderr, "Usage: seqtk famask <src.fa> <mask.fa>\n");
+		return 1;
+	}
+	for (i = 0; i < 2; ++i) {
+		fp[i] = strcmp(argv[optind+i], "-")? gzopen(argv[optind+i], "r") : gzdopen(fileno(stdin), "r");
+		seq[i] = kseq_init(fp[i]);
+	}
+	while (kseq_read(seq[0]) >= 0) {
+		int min_l, c[2], is_upper;
+		kseq_read(seq[1]);
+		if (strcmp(seq[0]->name.s, seq[1]->name.s))
+			fprintf(stderr, "[%s] Different sequence names: %s != %s\n", __func__, seq[0]->name.s, seq[1]->name.s);
+		if (seq[0]->seq.l != seq[1]->seq.l)
+			fprintf(stderr, "[%s] Unequal sequence length: %ld != %ld\n", __func__, seq[0]->seq.l, seq[1]->seq.l);
+		min_l = seq[0]->seq.l < seq[1]->seq.l? seq[0]->seq.l : seq[1]->seq.l;
+		printf(">%s", seq[0]->name.s);
+		for (l = 0; l < min_l; ++l) {
+			c[0] = seq[0]->seq.s[l]; c[1] = seq[1]->seq.s[l];
+			if (c[1] == 'x') c[0] = tolower(c[0]);
+			else if (c[1] != 'X') c[0] = c[1];
 			if (l%60 == 0) putchar('\n');
 			putchar(c[0]);
 		}
@@ -665,6 +712,7 @@ int main(int argc, char *argv[])
 	else if (strcmp(argv[1], "randbase") == 0) stk_randbase(argc-1, argv+1);
 	else if (strcmp(argv[1], "cutN") == 0) stk_cutN(argc-1, argv+1);
 	else if (strcmp(argv[1], "listhet") == 0) stk_listhet(argc-1, argv+1);
+	else if (strcmp(argv[1], "famask") == 0) stk_famask(argc-1, argv+1);
 	else {
 		fprintf(stderr, "[main] unrecognized commad '%s'. Abort!\n", argv[1]);
 		return 1;
