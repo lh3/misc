@@ -2,9 +2,9 @@
 
 require('klib')
 
-local score, fit, doflt = { 1, 3, 5, 2 }, { 500, 0.95, 20000, 0.99 }, false
+local score, fit, doflt, printsam = { 1, 3, 5, 2 }, { 500, 0.95, 20000, 0.99 }, false, false
 
-for o, a in os.getopt(arg, 'a:b:q:r:l:L:f') do
+for o, a in os.getopt(arg, 'a:b:q:r:l:L:fp') do
 	if o == 'a' then score[1] = a
 	elseif o == 'b' then score[2] = a
 	elseif o == 'q' then score[3] = a
@@ -12,11 +12,12 @@ for o, a in os.getopt(arg, 'a:b:q:r:l:L:f') do
 	elseif o == 'l' then fit[1] = a
 	elseif o == 'L' then fit[3] = a
 	elseif o == 'f' then doflt = true
+	elseif o == 'p' then printsam = true
 	end
 end
 
 if #arg == 0 then
-	print('Usage: fltreg.lua [-a match] [-b mm] [-q gopen] [-r gext] [-l minl] [-L maxl] <in.sam>')
+	print('Usage: fltreg.lua [-fp] [-a match] [-b mm] [-q gopen] [-r gext] [-l minl] [-L maxl] <in.sam>')
 	os.exit(1)
 end
 
@@ -51,7 +52,11 @@ for l in fp:lines() do
 			drop[t[1]] = 1
 		end
 		if doflt == false then
-			print(t[1], qlen + h, qlen, string.format("%.4f", x[1] / qlen), string.format("%.4f", logit(a, b, qlen)), t[3], t[4]-1, t[4]-1+tlen, t[5])
+			if printsam then
+				if x[1]/qlen >= logit(a, b, qlen) then print(l) end
+			else
+				print(t[1], qlen + h, qlen, string.format("%.4f", x[1] / qlen), string.format("%.4f", logit(a, b, qlen)), t[3], t[4]-1, t[4]-1+tlen, t[5])
+			end
 		end
 	end
 end
