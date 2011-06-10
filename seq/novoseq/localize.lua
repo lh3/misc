@@ -49,7 +49,7 @@ for l in fp:lines() do
 				if o == 'M' then x, y = x + j, y + j
 				elseif o == 'I' then y = y + j
 				elseif o == 'D' then x = x + j
-				elseif o == 'H' or o == 'S' then
+				 elseif o == 'H' or o == 'S' then
 					c[y == 0 and 1 or 2] = j
 					y = y + j
 				end
