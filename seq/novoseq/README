@@ -1,0 +1,66 @@
+Human Decoy Sequences (37d5)
+****************************
+
+Methods
+=======
+
+Data collection
+---------------
+
+1. GRCh37p4 patches. Download data from:
+
+     ftp://ftp.ncbi.nih.gov/genbank/genomes/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh37.p4/
+
+   and cut sequences at contiguous 'N' longer then 20bp.
+
+2. BAC/fosmid clones. Download primate sequences (gbpri*) from GenBank 183:
+
+     ftp://ftp.ncbi.nih.gov/genbank/
+
+   and select human sequences with the DEFINITION field containing words
+   "BAC", "clone" or "fosmid", or with the KEYWORDS field containing "HTG".
+   Sequences having "LOW.PASS" in the DEFINITION field are excluded.
+
+3. HuRef contigs. Download the HuRef scaffolds from:
+
+     ftp://ftp.ncbi.nih.gov/genomes/H_sapiens/
+
+   and cut at contiguous 'N' longer than 20bp to get contigs. Contigs were
+   acquired this way instead of from the ABBA00000000.1 accession because some
+   foreign contigs were not used in the scaffold.
+
+4. NA12878 ALLPATH-LG assembly. Download data directly from:
+
+     http://www.ncbi.nlm.nih.gov/Traces/wgs/?val=AEKP
+
+
+Procedure
+---------
+
+1. Stringent alignment. Align WGS/clone sequences to the GRCh37 primary
+   assembly plus the alternate sequences and EBV (AC:NC_007605) with the
+   following command line:
+
+     bwa bwasw -Hb99 -q199 -r49 hs37a.fa xxx.fa.gz > xxx-b99.sam
+
+2. Relaxed alignment. Align to the same reference with the default BWA-SW
+   settings (-b3 -q5 -r2).
+
+3. UnReg-I regions. Filter out alignments with score no greater than 500,
+   and then extract unmapped regions no less than 1000bp (selreg.lua).
+   Chimeric BACs, contaminated BACs and BACs from cancer cell lines are
+   dropped.
+
+4. UnReg-I relaxed alignment. Align UnReg-I to the same reference with the
+   default BWA-SW settings. Filter out alignments with identity above f(l),
+   where f(l)=min{0.99, 1 / (1 + 0.055 * exp(-8.5e-5 * l))} and l is the
+   length of query sequence in the alignment (calsim.lua).
+
+5. UnReg-II regions. Use the same rule in step 3 to extract unmapped regions.
+
+6. UnReg-III regions. Drop an UnReg-II region that is contained in the relaxed
+   alignment from step 2 and has mapped flanking sequences longer than 500bp.
+
+7. Deredundancy. Perform all-vs-all alignment with BLAT and drop UnReg-III
+   sequences contained in another alignment with identity above f(l).
+
