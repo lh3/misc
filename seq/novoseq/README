@@ -16,7 +16,7 @@ Released Files
    3) Segment end
    4) Anchored 5'-end; -1 if unlocalized. This coordinate may be smaller
       then col 2 when the sequence around the breakpoint is a repeat but
-	  cannot be aligned colinearly with the rest of the sequence.
+      cannot be aligned colinearly with the rest of the sequence.
    5) Anchored 3'-end; -1 if unlocalized.
    6) BWA-SW mapping quality of the 5'-end flanking sequence
    7) Mapping quality of the 3'-end flanking sequence
