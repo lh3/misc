@@ -1,6 +1,45 @@
 Human Decoy Sequences (37d5)
 ****************************
 
+
+Released Files
+==============
+
+ * hs37d5ss.fa.gz  Decoy sequences in addition to GRCh37, with repetitive
+   sequences converted to lowcase. Each sequence represents an unmapped
+   segment whose origin and the coordinate are given in the sequence name.
+
+ * hs37d5ss.info   Localization of sequence segments. Each line consists of:
+
+   1) GenBank accession number
+   2) Decoy segment start (0-based coordinate)
+   3) Segment end
+   4) Anchored 5'-end; -1 if unlocalized. This coordinate may be smaller
+      then col 2 when the sequence around the breakpoint is a repeat but
+	  cannot be aligned colinearly with the rest of the sequence.
+   5) Anchored 3'-end; -1 if unlocalized.
+   6) BWA-SW mapping quality of the 5'-end flanking sequence
+   7) Mapping quality of the 3'-end flanking sequence
+   8-9) 5'-end coordinate in the GRCh37 primary assembly plus ALT.
+   10-11) 3'-end coordinate.
+   12-14) Coordinate of the top hit to the GRCh37 primary assembly.
+   15) Mapping quality of the top hit
+   16) Approximate identity of the top hit
+
+ * hs37d5ss.sam.gz  BWA-SW alignment against the GRCh37 primary assembly
+   (CMD option: -b2 -q3 -r1 -z10).
+
+ * hs37d5ss.repsum  Summary of the repetitive sequences, reported by
+   RepeatMasker-3.3.0 (RepBase 20110419).
+
+ * hs37d5ss.rep.gz  Detailed RepeatMasker report.  
+
+ * hs37d5cs.fa.gz   Concatenerated sequences with 20 "n" bases filled between
+   adjacent sequences.
+
+ * hs37d5cs.bed     BED file that maps hs37d5cs.fa.gz to hs37d5ss.fa.gz.
+
+
 Methods
 =======
 
