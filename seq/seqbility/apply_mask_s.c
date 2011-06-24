@@ -47,15 +47,16 @@ int main(int argc, char *argv[])
 	gzFile fp;
 	kseq_t *seq;
 	khash_t(s) *hash;
-	int c, min_q = 10;
+	int c, min_q = 10, complement = 0;
 
-	while ((c = getopt(argc, argv, "q:")) >= 0) {
+	while ((c = getopt(argc, argv, "q:c")) >= 0) {
 		switch (c) {
 		case 'q': min_q = atoi(optarg); break;
+		case 'c': complement = 1; break;
 		}
 	}
 	if (argc <= optind + 1) {
-		fprintf(stderr, "Usage: apply_mask_s [-q %d] <in.mask.fa> <in.fa>\n", min_q);
+		fprintf(stderr, "Usage: apply_mask_s [-c] [-q %d] <in.mask.fa> <in.fa>\n", min_q);
 		return 1;
 	}
 
@@ -77,7 +78,13 @@ int main(int argc, char *argv[])
 				int do_lower = 0;
 				if (seq->seq.s[i] == 'N') do_lower = 1;
 				else if (seq->qual.l == seq->seq.l && seq->qual.s[i] - 33 < min_q) do_lower = 1;
-				else if (i >= p->ori_len || !(p->mask[i/32]&1u<<i%32)) do_lower = 1;
+				else {
+					if (!complement) {
+						if (i >= p->ori_len || !(p->mask[i/32]&1u<<i%32)) do_lower = 1;
+					} else {
+						if (i >= p->ori_len || (p->mask[i/32]&1u<<i%32)) do_lower = 1;
+					}
+				}
 				if (do_lower) seq->seq.s[i] = tolower(seq->seq.s[i]);
 			}
 		}
