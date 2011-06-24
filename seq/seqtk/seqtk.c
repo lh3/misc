@@ -106,31 +106,48 @@ int stk_comp(int argc, char *argv[])
 {
 	gzFile fp;
 	kseq_t *seq;
-	int l;
-	if (argc == 1) {
+	int l, c, upper_only = 0;
+	while ((c = getopt(argc, argv, "u")) >= 0) {
+		switch (c) {
+			case 'u': upper_only = 1; break;
+		}
+	}
+	if (argc == optind) {
 		fprintf(stderr, "Usage:  seqtk comp <in.fa>\n\n");
-		fprintf(stderr, "Output format: chr, length, #A, #C, #G, #T, #2, #3, #4, #upper, #lower, #lower+N\n\n");
+		fprintf(stderr, "Output format: chr, length, #A, #C, #G, #T, #2, #3, #4, #CpG, #tv, #ts, #CpG-ts\n\n");
 		fprintf(stderr, "Tip: To avoid counting lowercase bases, filter the input with {tr \"a-z\" \"N\"}.\n");
 		return 1;
 	}
-	fp = (strcmp(argv[1], "-") == 0)? gzdopen(fileno(stdin), "r") : gzopen(argv[1], "r");
+	fp = (strcmp(argv[optind], "-") == 0)? gzdopen(fileno(stdin), "r") : gzopen(argv[optind], "r");
 	seq = kseq_init(fp);
 	while ((l = kseq_read(seq)) >= 0) {
-		int i, cnt[10]; // #A, #C, #G, #T, #2, #3, #4, #upper, #lower, #lower+N
-		memset(cnt, 0, 10 * sizeof(int));
+		int i, cnt[11];
+		int la = 'a', lb = -1, lc = 0, na, nb, nc;
+		na = seq->seq.s[0]; nb = seq_nt16_table[na]; nc = bitcnt_table[nb];
+		memset(cnt, 0, 11 * sizeof(int));
 		for (i = 0; i < l; ++i) {
-			int a, c, b = seq->seq.s[i];
-			if (isupper(b)) ++cnt[7];
-			if (islower(b)) ++cnt[8];
-			c = seq_nt16_table[b];
-			if (islower(b) || c == 15) ++cnt[9];
-			a = bitcnt_table[c];
-			if (a > 1) ++cnt[a+2];
-			c = seq_nt16to4_table[c];
-			if (c < 4) ++cnt[c];
+			int is_CpG = 0, a, b, c;
+			a = na; b = nb; c = nc;
+			na = seq->seq.s[i+1]; nb = seq_nt16_table[na]; nc = bitcnt_table[nb];
+			if (b == 2 || b == 10) { // C or Y
+				if (nb == 4 || nb == 5) is_CpG = 1;
+			} else if (b == 4 || b == 5) { // G or R
+				if (lb == 2 || lb == 10) is_CpG = 1;
+			}
+			if (upper_only == 0 || isupper(a)) {
+				if (c > 1) ++cnt[c+2];
+				if (c == 1) ++cnt[seq_nt16to4_table[b]];
+				if (b == 10 || b == 5) ++cnt[9];
+				else if (c == 2) ++cnt[8];
+				if (is_CpG) {
+					++cnt[7];
+					if (b == 10 || b == 5) ++cnt[10];
+				}
+			}
+			la = a; lb = b; lc = c;
 		}
 		printf("%s\t%d", seq->name.s, l);
-		for (i = 0; i < 10; ++i) printf("\t%d", cnt[i]);
+		for (i = 0; i < 11; ++i) printf("\t%d", cnt[i]);
 		putchar('\n');
 		fflush(stdout);
 	}
@@ -471,7 +488,7 @@ int stk_famask(int argc, char *argv[])
 {
 	gzFile fp[2];
 	kseq_t *seq[2];
-	int i, l, c, is_intersect = 0, is_haploid = 0, qual = 0, is_mask = 0;
+	int i, l;
 	if (argc < 3) {
 		fprintf(stderr, "Usage: seqtk famask <src.fa> <mask.fa>\n");
 		return 1;
@@ -481,7 +498,7 @@ int stk_famask(int argc, char *argv[])
 		seq[i] = kseq_init(fp[i]);
 	}
 	while (kseq_read(seq[0]) >= 0) {
-		int min_l, c[2], is_upper;
+		int min_l, c[2];
 		kseq_read(seq[1]);
 		if (strcmp(seq[0]->name.s, seq[1]->name.s))
 			fprintf(stderr, "[%s] Different sequence names: %s != %s\n", __func__, seq[0]->name.s, seq[1]->name.s);
