@@ -47,12 +47,15 @@ int main(int argc, char *argv[])
 	kstream_t *ks;
 	khash_t(s) *hash;
 	kstring_t *str;
-	int dret, c;
+	int dret, c, complement = 0;
 
-	while ((c = getopt(argc, argv, "")) >= 0) {
+	while ((c = getopt(argc, argv, "c")) >= 0) {
+		switch (c) {
+			case 'c': complement = 1; break;
+		}
 	}
 	if (argc <= optind + 1) {
-		fprintf(stderr, "Usage: apply_mask_l <in.mask.fa> <in.list>\n");
+		fprintf(stderr, "Usage: apply_mask_l [-c] <in.mask.fa> <in.list>\n");
 		return 1;
 	}
 
@@ -70,7 +73,11 @@ int main(int argc, char *argv[])
 		p = (k != kh_end(hash))? &kh_val(hash, k) : 0;
 		ks_getuntil(ks, 0, str, &dret);
 		pos = atoi(str->s) - 1;
-		if (p && pos < p->ori_len && (p->mask[pos/32]&1u<<pos%32)) do_print = 1;
+		if (complement == 0) {
+			if (p && pos < p->ori_len && (p->mask[pos/32]&1u<<pos%32)) do_print = 1;
+		} else {
+			if (p && pos < p->ori_len && (p->mask[pos/32]&1u<<pos%32) == 0) do_print = 1;
+		}
 		if (do_print) printf("%s\t%d", kh_key(hash, k), pos + 1);
 		if (dret != '\n') {
 			if (do_print) putchar('\t');
