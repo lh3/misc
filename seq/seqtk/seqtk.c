@@ -114,17 +114,17 @@ int stk_comp(int argc, char *argv[])
 	}
 	if (argc == optind) {
 		fprintf(stderr, "Usage:  seqtk comp <in.fa>\n\n");
-		fprintf(stderr, "Output format: chr, length, #A, #C, #G, #T, #2, #3, #4, #CpG, #tv, #ts, #CpG-ts\n\n");
+		fprintf(stderr, "Output format: chr, length, #A, #C, #G, #T, #2, #3, #4, #CpG, #tv, #ts, #CpG-ts #A<=>T, #C<=>G\n\n");
 		fprintf(stderr, "Tip: To avoid counting lowercase bases, filter the input with {tr \"a-z\" \"N\"}.\n");
 		return 1;
 	}
 	fp = (strcmp(argv[optind], "-") == 0)? gzdopen(fileno(stdin), "r") : gzopen(argv[optind], "r");
 	seq = kseq_init(fp);
 	while ((l = kseq_read(seq)) >= 0) {
-		int i, cnt[11];
+		int i, cnt[13];
 		int la = 'a', lb = -1, lc = 0, na, nb, nc;
 		na = seq->seq.s[0]; nb = seq_nt16_table[na]; nc = bitcnt_table[nb];
-		memset(cnt, 0, 11 * sizeof(int));
+		memset(cnt, 0, 13 * sizeof(int));
 		for (i = 0; i < l; ++i) {
 			int is_CpG = 0, a, b, c;
 			a = na; b = nb; c = nc;
@@ -138,7 +138,11 @@ int stk_comp(int argc, char *argv[])
 				if (c > 1) ++cnt[c+2];
 				if (c == 1) ++cnt[seq_nt16to4_table[b]];
 				if (b == 10 || b == 5) ++cnt[9];
-				else if (c == 2) ++cnt[8];
+				else if (c == 2) {
+					++cnt[8];
+					if (b == 9) ++cnt[11];
+					else if (b == 6) ++cnt[12];
+				}
 				if (is_CpG) {
 					++cnt[7];
 					if (b == 10 || b == 5) ++cnt[10];
@@ -147,7 +151,7 @@ int stk_comp(int argc, char *argv[])
 			la = a; lb = b; lc = c;
 		}
 		printf("%s\t%d", seq->name.s, l);
-		for (i = 0; i < 11; ++i) printf("\t%d", cnt[i]);
+		for (i = 0; i < 13; ++i) printf("\t%d", cnt[i]);
 		putchar('\n');
 		fflush(stdout);
 	}
