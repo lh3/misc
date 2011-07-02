@@ -32,7 +32,7 @@ reghash_t *stk_reg_read(const char *fn)
 	fp = strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(fileno(stdin), "r");
 	ks = ks_init(fp);
 	while (ks_getuntil(ks, 0, str, &dret) >= 0) {
-		int beg = 0, end = INT_MAX;
+		int beg = -1, end = -1;
 		reglist_t *p;
 		khint_t k = kh_get(reg, h, str->s);
 		if (k == kh_end(h)) {
@@ -56,6 +56,7 @@ reghash_t *stk_reg_read(const char *fn)
 		// skip the rest of the line
 		if (dret != '\n') while ((dret = ks_getc(ks)) > 0 && dret != '\n');
 		if (end < 0 && beg > 0) end = beg, beg = beg - 1; // if there is only one column
+		if (beg < 0) beg = 0, end = INT_MAX;
 		if (p->n == p->m) {
 			p->m = p->m? p->m<<1 : 4;
 			p->a = realloc(p->a, p->m * 8);
