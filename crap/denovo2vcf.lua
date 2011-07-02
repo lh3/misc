@@ -11,9 +11,12 @@ for l in io.lines() do
 		for i = 17, 38, 2 do
 			c[9], c[10] = c[9] + t[i], c[10] + t[i+1]
 		end
+		local tmp = t[5]:match('"(%S+)"')
+		if tmp ~= nil then t[5] = tmp end
+		if t[2] == '23' then t[2] = 'X' end
 		local o = {t[2], t[3], t[1], t[4], t[5]}
 		print(table.concat(o, '\t'), 30, '.',
-			'Type='..t[50]..';FLT='..t[51],
+			'Type='..t[50]..';FLT='..t[51]..';Set='..t[6]..t[7]..t[8]..';CpG='..t[49],
 			'CUM:CSC',
 			c[1]..','..c[2]..':'..t[41]..','..t[42],
 			c[3]..','..c[4]..':'..t[43]..','..t[44],
