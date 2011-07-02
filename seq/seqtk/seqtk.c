@@ -32,26 +32,30 @@ reghash_t *stk_reg_read(const char *fn)
 	fp = strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(fileno(stdin), "r");
 	ks = ks_init(fp);
 	while (ks_getuntil(ks, 0, str, &dret) >= 0) {
-		char *s = strdup(str->s);
 		int beg = 0, end = INT_MAX;
 		reglist_t *p;
-		khint_t k = kh_get(reg, h, s);
+		khint_t k = kh_get(reg, h, str->s);
 		if (k == kh_end(h)) {
 			int ret;
+			char *s = strdup(str->s);
 			k = kh_put(reg, h, s, &ret);
 			memset(&kh_val(h, k), 0, sizeof(reglist_t));
 		}
 		p = &kh_val(h, k);
 		if (dret != '\n') {
-			if (ks_getuntil(ks, 0, str, &dret) > 0)
+			if (ks_getuntil(ks, 0, str, &dret) > 0 && isdigit(str->s[0])) {
 				beg = atoi(str->s);
-			if (dret != '\n') {
-				if (ks_getuntil(ks, 0, str, &dret) > 0)
-					end = atoi(str->s);
+				if (dret != '\n') {
+					if (ks_getuntil(ks, 0, str, &dret) > 0 && isdigit(str->s[0])) {
+						end = atoi(str->s);
+						if (end < 0) end = -1;
+					}
+				}
 			}
 		}
 		// skip the rest of the line
 		if (dret != '\n') while ((dret = ks_getc(ks)) > 0 && dret != '\n');
+		if (end < 0 && beg > 0) end = beg, beg = beg - 1; // if there is only one column
 		if (p->n == p->m) {
 			p->m = p->m? p->m<<1 : 4;
 			p->a = realloc(p->a, p->m * 8);
