@@ -674,13 +674,14 @@ static void print_seq(FILE *fpout, const kseq_t *ks, int begin, int end)
 }
 int stk_cutN(int argc, char *argv[])
 {
-	int c, l;
+	int c, l, gap_only = 0;
 	gzFile fp;
 	kseq_t *ks;
-	while ((c = getopt(argc, argv, "n:p:")) >= 0) {
+	while ((c = getopt(argc, argv, "n:p:g")) >= 0) {
 		switch (c) {
 		case 'n': cutN_min_N_tract = atoi(optarg); break;
 		case 'p': cutN_nonN_penalty = atoi(optarg); break;
+		case 'g': gap_only = 1; break;
 		default: return 1;
 		}
 	}
@@ -688,7 +689,8 @@ int stk_cutN(int argc, char *argv[])
 		fprintf(stderr, "\n");
 		fprintf(stderr, "Usage:   seqtk cutN [options] <in.fa>\n\n");
 		fprintf(stderr, "Options: -n INT    min size of N tract [%d]\n", cutN_min_N_tract);
-		fprintf(stderr, "         -p INT    penalty for a non-N [%d]\n\n", cutN_nonN_penalty);
+		fprintf(stderr, "         -p INT    penalty for a non-N [%d]\n", cutN_nonN_penalty);
+		fprintf(stderr, "         -g        print gaps only, no sequence\n\n");
 		return 1;
 	}
 	fp = (strcmp(argv[optind], "-") == 0)? gzdopen(fileno(stdin), "r") : gzopen(argv[optind], "r");
@@ -696,10 +698,13 @@ int stk_cutN(int argc, char *argv[])
 	while ((l = kseq_read(ks)) >= 0) {
 		int k = 0, begin = 0, end = 0;
 		while (find_next_cut(ks, k, &begin, &end) >= 0) {
-			if (begin != 0) print_seq(stdout, ks, k, begin);
+			if (begin != 0) {
+				if (gap_only) printf("%s\t%d\t%d\n", ks->name.s, begin, end);
+				else print_seq(stdout, ks, k, begin);
+			}
 			k = end;
 		}
-		print_seq(stdout, ks, k, l);
+		if (!gap_only) print_seq(stdout, ks, k, l);
 	}
 	kseq_destroy(ks);
 	gzclose(fp);
