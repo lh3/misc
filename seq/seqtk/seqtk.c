@@ -112,54 +112,70 @@ int stk_comp(int argc, char *argv[])
 	gzFile fp;
 	kseq_t *seq;
 	int l, c, upper_only = 0;
-	while ((c = getopt(argc, argv, "u")) >= 0) {
+	reghash_t *h = 0;
+	reglist_t dummy;
+	while ((c = getopt(argc, argv, "ur:")) >= 0) {
 		switch (c) {
 			case 'u': upper_only = 1; break;
+			case 'r': h = stk_reg_read(optarg); break;
 		}
 	}
 	if (argc == optind) {
-		fprintf(stderr, "Usage:  seqtk comp <in.fa>\n\n");
-		fprintf(stderr, "Output format: chr, length, #A, #C, #G, #T, #2, #3, #4, #CpG, #tv, #ts, #CpG-ts #A<=>T, #C<=>G\n\n");
-		fprintf(stderr, "Tip: To avoid counting lowercase bases, filter the input with {tr \"a-z\" \"N\"}.\n");
+		fprintf(stderr, "Usage:  seqtk comp [-u] [-r in.bed] <in.fa>\n\n");
+		fprintf(stderr, "Output format: chr, length, #A, #C, #G, #T, #2, #3, #4, #CpG, #tv, #ts, #CpG-ts\n");
 		return 1;
 	}
 	fp = (strcmp(argv[optind], "-") == 0)? gzdopen(fileno(stdin), "r") : gzopen(argv[optind], "r");
 	seq = kseq_init(fp);
+	dummy.n= dummy.m = 1; dummy.a = calloc(1, 8);
 	while ((l = kseq_read(seq)) >= 0) {
-		int i, cnt[13];
-		int la = 'a', lb = -1, lc = 0, na, nb, nc;
-		na = seq->seq.s[0]; nb = seq_nt16_table[na]; nc = bitcnt_table[nb];
-		memset(cnt, 0, 13 * sizeof(int));
-		for (i = 0; i < l; ++i) {
-			int is_CpG = 0, a, b, c;
-			a = na; b = nb; c = nc;
-			na = seq->seq.s[i+1]; nb = seq_nt16_table[na]; nc = bitcnt_table[nb];
-			if (b == 2 || b == 10) { // C or Y
-				if (nb == 4 || nb == 5) is_CpG = 1;
-			} else if (b == 4 || b == 5) { // G or R
-				if (lb == 2 || lb == 10) is_CpG = 1;
-			}
-			if (upper_only == 0 || isupper(a)) {
-				if (c > 1) ++cnt[c+2];
-				if (c == 1) ++cnt[seq_nt16to4_table[b]];
-				if (b == 10 || b == 5) ++cnt[9];
-				else if (c == 2) {
-					++cnt[8];
-					if (b == 9) ++cnt[11];
-					else if (b == 6) ++cnt[12];
-				}
-				if (is_CpG) {
-					++cnt[7];
-					if (b == 10 || b == 5) ++cnt[10];
-				}
-			}
-			la = a; lb = b; lc = c;
+		int i, k;
+		reglist_t *p = 0;
+		if (h) {
+			khint_t k = kh_get(reg, h, seq->name.s);
+			if (k != kh_end(h)) p = &kh_val(h, k);
+		} else {
+			p = &dummy;
+			dummy.a[0] = l;
 		}
-		printf("%s\t%d", seq->name.s, l);
-		for (i = 0; i < 13; ++i) printf("\t%d", cnt[i]);
-		putchar('\n');
+		for (k = 0; p && k < p->n; ++k) {
+			int beg = p->a[k]>>32, end = p->a[k]&0xffffffff;
+			int la, lb, lc, na, nb, nc, cnt[11];
+			if (beg > 0) la = seq->seq.s[beg-1], lb = seq_nt16_table[la], lc = bitcnt_table[lb];
+			else la = 'a', lb = -1, lc = 0;
+			na = seq->seq.s[beg]; nb = seq_nt16_table[na]; nc = bitcnt_table[nb];
+			memset(cnt, 0, 11 * sizeof(int));
+			for (i = beg; i < end; ++i) {
+				int is_CpG = 0, a, b, c;
+				a = na; b = nb; c = nc;
+				na = seq->seq.s[i+1]; nb = seq_nt16_table[na]; nc = bitcnt_table[nb];
+				if (b == 2 || b == 10) { // C or Y
+					if (nb == 4 || nb == 5) is_CpG = 1;
+				} else if (b == 4 || b == 5) { // G or R
+					if (lb == 2 || lb == 10) is_CpG = 1;
+				}
+				if (upper_only == 0 || isupper(a)) {
+					if (c > 1) ++cnt[c+2];
+					if (c == 1) ++cnt[seq_nt16to4_table[b]];
+					if (b == 10 || b == 5) ++cnt[9];
+					else if (c == 2) {
+						++cnt[8];
+					}
+					if (is_CpG) {
+						++cnt[7];
+						if (b == 10 || b == 5) ++cnt[10];
+					}
+				}
+				la = a; lb = b; lc = c;
+			}
+			if (h) printf("%s\t%d\t%d", seq->name.s, beg, end);
+			else printf("%s\t%d", seq->name.s, l);
+			for (i = 0; i < 11; ++i) printf("\t%d", cnt[i]);
+			putchar('\n');
+		}
 		fflush(stdout);
 	}
+	free(dummy.a);
 	kseq_destroy(seq);
 	gzclose(fp);
 	return 0;
