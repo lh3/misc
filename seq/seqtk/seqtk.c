@@ -296,8 +296,8 @@ int stk_fq2fa(int argc, char *argv[])
 				if (seq->qual.s[i] - 33 < qual_thres)
 					seq->seq.s[i] = tolower(seq->seq.s[i]);
 		}
-		printf(">%s", seq->name.s);
-		if (seq->comment.l) printf(" %s", seq->comment.s);
+		putchar('>'); fputs(seq->name.s, stdout);
+		if (seq->comment.l) { putchar(' '); fputs(seq->comment.s, stdout); }
 		for (i = 0; i < l; i += 60) {
 			putchar('\n');
 			for (j = i; j < i + 60 && j < l; ++j) putchar(seq->seq.s[j]);
