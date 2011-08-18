@@ -426,10 +426,10 @@ int stk_subseq(int argc, char *argv[])
 			}
 			putchar('\n');
 			if (seq->qual.l != seq->seq.l || is_tab) continue;
-			printf("+\n");
+			printf("+");
 			for (j = 0; j < end - beg; ++j) {
 				if (j % 60 == 0) putchar('\n');
-				putchar(seq->seq.s[j + beg]);
+				putchar(seq->qual.s[j + beg]);
 			}
 			putchar('\n');
 		}
