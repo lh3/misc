@@ -282,28 +282,43 @@ int stk_fq2fa(int argc, char *argv[])
 {
 	gzFile fp;
 	kseq_t *seq;
-	int l, i, j, qual_thres = 0;
-	if (argc == 1) {
-		fprintf(stderr, "Usage: seqtk fq2fa <in.fq> [qual_thres]\n");
+	char *buf;
+	int l, i, c, qual_thres = 0, linelen = 60;
+	while ((c = getopt(argc, argv, "q:l:")) >= 0) {
+		switch (c) {
+			case 'q': qual_thres = atoi(optarg); break;
+			case 'l': linelen = atoi(optarg); break;
+		}
+	}
+	if (argc == optind) {
+		fprintf(stderr, "Usage: seqtk fq2fa [-q qualThres=0] [-l lineLen=60] <in.fq>\n");
 		return 1;
 	}
-	fp = strcmp(argv[1], "-")? gzopen(argv[1], "r") : gzdopen(fileno(stdin), "r");
-	if (argc >= 3) qual_thres = atoi(argv[2]);
+	buf = linelen > 0? malloc(linelen + 1) : 0;
+	fp = strcmp(argv[optind], "-")? gzopen(argv[optind], "r") : gzdopen(fileno(stdin), "r");
 	seq = kseq_init(fp);
 	while ((l = kseq_read(seq)) >= 0) {
-		if (seq->qual.l) {
+		if (seq->qual.l && qual_thres > 0) {
 			for (i = 0; i < l; ++i)
 				if (seq->qual.s[i] - 33 < qual_thres)
 					seq->seq.s[i] = tolower(seq->seq.s[i]);
 		}
-		putchar('>'); fputs(seq->name.s, stdout);
-		if (seq->comment.l) { putchar(' '); fputs(seq->comment.s, stdout); }
-		for (i = 0; i < l; i += 60) {
-			putchar('\n');
-			for (j = i; j < i + 60 && j < l; ++j) putchar(seq->seq.s[j]);
-		}
-		putchar('\n');
+		putchar('>');
+		if (seq->comment.l) {
+			fputs(seq->name.s, stdout);
+			putchar(' ');
+			puts(seq->comment.s);
+		} else puts(seq->name.s);
+		if (buf) { // multi-line
+			for (i = 0; i < l; i += linelen) {
+				int x = i + linelen < l? linelen : l - i;
+				memcpy(buf, seq->seq.s + i, x);
+				buf[x] = 0;
+				puts(buf);
+			}
+		} else puts(seq->seq.s);
 	}
+	free(buf);
 	kseq_destroy(seq);
 	gzclose(fp);
 	return 0;
