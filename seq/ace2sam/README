@@ -1,0 +1,23 @@
+To compile:
+
+  gcc -g -O2 -Wall -o ace2sam ace2sam.c -lz
+
+To run:
+
+  ace2sam in.ace > a2s.out 2> a2s.err
+  (grep ^H a2s.err | sed s,^..,,; cat a2s.out) > a2s.sam
+  grep ^S a2s.err | sed s,^..,, > a2s.fa
+
+The immediate output of ace2sam is a SAM without header. Ace2sam works on a
+stream. It is unable to write the SAM header until it sees all the contigs.
+
+Assumptions about ACE:
+
+ * Fields appear in the following order: AS->(CO->[BQ]->(AF)->(RD->QA)).
+
+ * The order of reads in AF is identical to the order in RD.
+
+ * Words and numbers are separated by a single space or TAB.
+
+ * Each line ends with '\n', not '\r' or '\r\n'.
+
