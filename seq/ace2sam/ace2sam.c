@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
 					if ((cigar[i]&0xf) != 1 && (cigar[i-1]&0xf) == 6 && (cigar[i-2]&0xf) != 1) {
 						cigar[i-1] = 0;
 						if ((cigar[i]&0xf) == (cigar[i-2]&0xf)) // merge operations
-							cigar[i] += cigar[i-2], cigar[i-2] = 0;
+							cigar[i] += cigar[i-2]>>4<<4, cigar[i-2] = 0;
 					}
 				}
 				for (i = k = 0; i < n_cigar; ++i) // squeeze out dumb operations
