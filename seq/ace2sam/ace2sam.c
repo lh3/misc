@@ -183,10 +183,12 @@ int main(int argc, char *argv[])
 			while (ks_getuntil(ks, '\n', &s, &dret) >= 0 && s.l > 0) kputs(s.s, &t[2]); // read the read sequence
 		} else if (strcmp(s.s, "QA") == 0) { // clipping
 			if (af_i >= af_n) fatal("more 'QA' records than 'AF'");
-			int beg, end, pos, op;
-			ks_getuntil(ks, 0, &s, &dret); ks_getuntil(ks, 0, &s, &dret); // skip quality clipping
+			int qbeg, qend, beg, end, pos, op;
+			ks_getuntil(ks, 0, &s, &dret); qbeg = atoi(s.s) - 1;
+			ks_getuntil(ks, 0, &s, &dret); qend = atoi(s.s);
 			ks_getuntil(ks, 0, &s, &dret); beg = atoi(s.s) - 1; // align clipping start
 			ks_getuntil(ks, 0, &s, &dret); end = atoi(s.s); // clipping end
+			//if (beg < qbeg) beg = qbeg; if (end > qend) end = qend;
 			if (dret != '\n') ks_getuntil(ks, '\n', &s, &dret);
 			// compute 1-based POS
 			pos = af[af_i]>>2; // retrieve the position information
