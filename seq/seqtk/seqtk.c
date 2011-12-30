@@ -104,7 +104,37 @@ unsigned char seq_nt16_table[256] = {
 
 char *seq_nt16_rev_table = "XACMGRSVTWYHKDBN";
 unsigned char seq_nt16to4_table[] = { 4, 0, 1, 4, 2, 4, 4, 4, 3, 4, 4, 4, 4, 4, 4, 4 };
+unsigned char seq_nt16comp_table[] = { 0, 8, 4, 12, 2, 10, 9, 14, 1, 6, 5, 13, 3, 11, 7, 15 };
 int bitcnt_table[] = { 4, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 };
+
+/* reverse complement */
+int stk_revseq(int argc, char *argv[])
+{
+	gzFile fp;
+	kseq_t *seq;
+	if (optind == argc) {
+		fprintf(stderr, "Usage: seqtk revseq <in.fa>\n");
+		return 1;
+	}
+	fp = strcmp(argv[optind], "-")? gzopen(argv[optind], "r") : gzdopen(fileno(stdin), "r");
+	seq = kseq_init(fp);
+	while (kseq_read(seq) >= 0) {
+		int i, c0, c1;
+		for (i = 0; i < seq->seq.l>>1; ++i) {
+			c0 = seq_nt16_rev_table[seq_nt16comp_table[seq_nt16_table[(int)seq->seq.s[i]]]];
+			c1 = seq_nt16_rev_table[seq_nt16comp_table[seq_nt16_table[(int)seq->seq.s[seq->seq.l - 1 - i]]]];
+			seq->seq.s[i] = c1;
+			seq->seq.s[seq->seq.l - 1 - i] = c0;
+		}
+		if (seq->seq.l&1)
+			seq->seq.s[seq->seq.l>>1] = seq_nt16_rev_table[seq_nt16comp_table[seq_nt16_table[(int)seq->seq.s[seq->seq.l>>1]]]];
+		putchar('>'); puts(seq->name.s);
+		puts(seq->seq.s);
+	}
+	kseq_destroy(seq);
+	gzclose(fp);
+	return 0;
+}
 
 /* composition */
 int stk_comp(int argc, char *argv[])
@@ -748,6 +778,7 @@ static int usage()
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Usage:   seqtk <command> <arguments>\n\n");
 	fprintf(stderr, "Command: comp      get the nucleotide composite of FASTA/Q\n");
+	fprintf(stderr, "         revseq    reverse complement DNA sequences\n");
 	fprintf(stderr, "         hety      regional heterozygosity\n");
 	fprintf(stderr, "         fq2fa     convert FASTQ to FASTA\n");
 	fprintf(stderr, "         subseq    extract subsequences from FASTA/Q\n");
@@ -775,6 +806,7 @@ int main(int argc, char *argv[])
 	else if (strcmp(argv[1], "cutN") == 0) stk_cutN(argc-1, argv+1);
 	else if (strcmp(argv[1], "listhet") == 0) stk_listhet(argc-1, argv+1);
 	else if (strcmp(argv[1], "famask") == 0) stk_famask(argc-1, argv+1);
+	else if (strcmp(argv[1], "revseq") == 0) stk_revseq(argc-1, argv+1);
 	else {
 		fprintf(stderr, "[main] unrecognized commad '%s'. Abort!\n", argv[1]);
 		return 1;
