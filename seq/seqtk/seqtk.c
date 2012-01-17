@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <math.h>
 
 #include "kseq.h"
 KSEQ_INIT(gzFile, gzread)
@@ -106,6 +107,16 @@ char *seq_nt16_rev_table = "XACMGRSVTWYHKDBN";
 unsigned char seq_nt16to4_table[] = { 4, 0, 1, 4, 2, 4, 4, 4, 3, 4, 4, 4, 4, 4, 4, 4 };
 unsigned char seq_nt16comp_table[] = { 0, 8, 4, 12, 2, 10, 9, 14, 1, 6, 5, 13, 3, 11, 7, 15 };
 int bitcnt_table[] = { 4, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 };
+char comp_tab[] = {
+	  0,   1,	2,	 3,	  4,   5,	6,	 7,	  8,   9,  10,	11,	 12,  13,  14,	15,
+	 16,  17,  18,	19,	 20,  21,  22,	23,	 24,  25,  26,	27,	 28,  29,  30,	31,
+	 32,  33,  34,	35,	 36,  37,  38,	39,	 40,  41,  42,	43,	 44,  45,  46,	47,
+	 48,  49,  50,	51,	 52,  53,  54,	55,	 56,  57,  58,	59,	 60,  61,  62,	63,
+	 64, 'T', 'V', 'G', 'H', 'E', 'F', 'C', 'D', 'I', 'J', 'M', 'L', 'K', 'N', 'O',
+	'P', 'Q', 'Y', 'S', 'A', 'A', 'B', 'W', 'X', 'R', 'Z',	91,	 92,  93,  94,	95,
+	 64, 't', 'v', 'g', 'h', 'e', 'f', 'c', 'd', 'i', 'j', 'm', 'l', 'k', 'n', 'o',
+	'p', 'q', 'y', 's', 'a', 'a', 'b', 'w', 'x', 'r', 'z', 123, 124, 125, 126, 127
+};
 
 /* reverse complement */
 int stk_revseq(int argc, char *argv[])
@@ -121,15 +132,71 @@ int stk_revseq(int argc, char *argv[])
 	while (kseq_read(seq) >= 0) {
 		int i, c0, c1;
 		for (i = 0; i < seq->seq.l>>1; ++i) {
-			c0 = seq_nt16_rev_table[seq_nt16comp_table[seq_nt16_table[(int)seq->seq.s[i]]]];
-			c1 = seq_nt16_rev_table[seq_nt16comp_table[seq_nt16_table[(int)seq->seq.s[seq->seq.l - 1 - i]]]];
+			c0 = comp_tab[(int)seq->seq.s[i]];
+			c1 = comp_tab[(int)seq->seq.s[seq->seq.l - 1 - i]];
 			seq->seq.s[i] = c1;
 			seq->seq.s[seq->seq.l - 1 - i] = c0;
 		}
 		if (seq->seq.l&1)
-			seq->seq.s[seq->seq.l>>1] = seq_nt16_rev_table[seq_nt16comp_table[seq_nt16_table[(int)seq->seq.s[seq->seq.l>>1]]]];
+			seq->seq.s[seq->seq.l>>1] = comp_tab[(int)seq->seq.s[seq->seq.l>>1]];
 		putchar('>'); puts(seq->name.s);
 		puts(seq->seq.s);
+	}
+	kseq_destroy(seq);
+	gzclose(fp);
+	return 0;
+}
+
+/* quality based trimming with Mott's algorithm */
+int stk_trimfq(int argc, char *argv[])
+{
+	gzFile fp;
+	kseq_t *seq;
+	double param = 0.05, q_int2real[128];
+	int i, c, min_len = 30;
+	while ((c = getopt(argc, argv, "l:q:")) >= 0) {
+		switch (c) {
+			case 'q': param = atof(optarg); break;
+			case 'l': min_len = atoi(optarg); break;
+		}
+	}
+	if (optind == argc) {
+		fprintf(stderr, "Usage: seqtk trimfq [-l minLen=30] [-q thres=0.05] <in.fa>\n\n");
+		return 1;
+	}
+	fp = strcmp(argv[optind], "-")? gzopen(argv[optind], "r") : gzdopen(fileno(stdin), "r");
+	seq = kseq_init(fp);
+	for (i = 0; i < 128; ++i)
+		q_int2real[i] = pow(10., -(i - 33) / 10.);
+	while (kseq_read(seq) >= 0) {
+		int beg, tmp, end;
+		double s, max;
+		if (seq->qual.l == 0) continue; // no quality
+		if (seq->qual.l > min_len) {
+			for (i = 0, beg = tmp = 0, end = seq->qual.l, s = max = 0.; i < seq->qual.l; ++i) {
+				int q = seq->qual.s[i];
+				if (q < 36) q = 36;
+				if (q > 127) q = 127;
+				s += param - q_int2real[q];
+				if (s > max) max = s, beg = tmp, end = i + 1;
+				if (s < 0) s = 0, tmp = i + 1;
+			}
+			if (end - beg < min_len) { // window-based 
+				int is, imax;
+				for (i = 0, is = 0; i < min_len; ++i)
+					is += seq->qual.s[i] - 33;
+				for (imax = is, beg = 0; i < seq->qual.l; ++i) {
+					is += (int)seq->qual.s[i] - seq->qual.s[i - min_len];
+					if (imax < is) imax = is, beg = i - min_len + 1;
+				}
+				end = beg + min_len;
+			}
+		} else beg = 0, end = seq->qual.l;
+		seq->seq.s[end] = seq->qual.s[end] = '\n';
+		putchar('@'); puts(seq->name.s);
+		fwrite(seq->seq.s + beg, 1, end - beg + 1, stdout);
+		puts("+");
+		fwrite(seq->qual.s + beg, 1, end - beg + 1, stdout);
 	}
 	kseq_destroy(seq);
 	gzclose(fp);
@@ -788,6 +855,7 @@ static int usage()
 	fprintf(stderr, "         randbase  choose a random base from hets\n");
 	fprintf(stderr, "         cutN      cut sequence at long N\n");
 	fprintf(stderr, "         listhet   extract the position of each het\n");
+	fprintf(stderr, "         trimfq    trim FASTQ using the Phred algorithm\n");
 	fprintf(stderr, "\n");
 	return 1;
 }
@@ -807,6 +875,7 @@ int main(int argc, char *argv[])
 	else if (strcmp(argv[1], "listhet") == 0) stk_listhet(argc-1, argv+1);
 	else if (strcmp(argv[1], "famask") == 0) stk_famask(argc-1, argv+1);
 	else if (strcmp(argv[1], "revseq") == 0) stk_revseq(argc-1, argv+1);
+	else if (strcmp(argv[1], "trimfq") == 0) stk_trimfq(argc-1, argv+1);
 	else {
 		fprintf(stderr, "[main] unrecognized commad '%s'. Abort!\n", argv[1]);
 		return 1;
