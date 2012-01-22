@@ -843,11 +843,12 @@ int stk_hrun(int argc, char *argv[])
 {
 	gzFile fp;
 	kseq_t *ks;
-	int min_len = 6, l = 0, c = 0, beg = 0, i;
+	int min_len = 7, l = 0, c = 0, beg = 0, i;
 	if (argc == optind) {
 		fprintf(stderr, "Usage: seqtk hrun <in.fa> [minLen=%d]\n", min_len);
 		return 1;
 	}
+	if (argc == optind + 2) min_len = atoi(argv[optind+1]);
 	fp = (strcmp(argv[optind], "-") == 0)? gzdopen(fileno(stdin), "r") : gzopen(argv[optind], "r");
 	ks = kseq_init(fp);
 	while (kseq_read(ks) >= 0) {
