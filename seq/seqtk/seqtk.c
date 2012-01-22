@@ -843,7 +843,7 @@ int stk_hrun(int argc, char *argv[])
 {
 	gzFile fp;
 	kseq_t *ks;
-	int min_len = 6;
+	int min_len = 6, l = 0, c = 0, beg = 0, i;
 	if (argc == optind) {
 		fprintf(stderr, "Usage: seqtk hrun <in.fa> [minLen=%d]\n", min_len);
 		return 1;
@@ -851,7 +851,6 @@ int stk_hrun(int argc, char *argv[])
 	fp = (strcmp(argv[optind], "-") == 0)? gzdopen(fileno(stdin), "r") : gzopen(argv[optind], "r");
 	ks = kseq_init(fp);
 	while (kseq_read(ks) >= 0) {
-		int i, l, c, beg;
 		c = ks->seq.s[0]; l = 1; beg = 0;
 		for (i = 1; i < ks->seq.l; ++i) {
 			if (ks->seq.s[i] != c) {
