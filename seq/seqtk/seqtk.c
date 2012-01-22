@@ -839,6 +839,33 @@ int stk_cutN(int argc, char *argv[])
 	return 0;
 }
 
+int stk_hrun(int argc, char *argv[])
+{
+	gzFile fp;
+	kseq_t *ks;
+	int min_len = 6;
+	if (argc == optind) {
+		fprintf(stderr, "Usage: seqtk hrun <in.fa> [minLen=%d]\n", min_len);
+		return 1;
+	}
+	fp = (strcmp(argv[optind], "-") == 0)? gzdopen(fileno(stdin), "r") : gzopen(argv[optind], "r");
+	ks = kseq_init(fp);
+	while (kseq_read(ks) >= 0) {
+		int i, l, c, beg;
+		c = ks->seq.s[0]; l = 1; beg = 0;
+		for (i = 1; i < ks->seq.l; ++i) {
+			if (ks->seq.s[i] != c) {
+				if (l >= min_len) printf("%s\t%d\t%d\t%c\n", ks->name.s, beg, beg + l, c);
+				c = ks->seq.s[i]; l = 1; beg = i;
+			} else ++l;
+		}
+	}
+	if (l >= min_len) printf("%s\t%d\t%d\t%c\n", ks->name.s, beg, beg + l, c);
+	kseq_destroy(ks);
+	gzclose(fp);
+	return 0;
+}
+
 /* main function */
 static int usage()
 {
@@ -876,6 +903,7 @@ int main(int argc, char *argv[])
 	else if (strcmp(argv[1], "famask") == 0) stk_famask(argc-1, argv+1);
 	else if (strcmp(argv[1], "revseq") == 0) stk_revseq(argc-1, argv+1);
 	else if (strcmp(argv[1], "trimfq") == 0) stk_trimfq(argc-1, argv+1);
+	else if (strcmp(argv[1], "hrun") == 0) stk_hrun(argc-1, argv+1);
 	else {
 		fprintf(stderr, "[main] unrecognized commad '%s'. Abort!\n", argv[1]);
 		return 1;
